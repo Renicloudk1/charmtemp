@@ -1,19 +1,23 @@
 Deno.serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
-  }
-  const body = await req.text();
-  const discordRes = await fetch("https://discord.com/api/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "CharmBot (https://charmbot.online, 1.0.0)",
-    },
+  const url = new URL(req.url);
+  const discordUrl = "https://discord.com" + url.pathname + url.search;
+
+  const headers = new Headers(req.headers);
+  headers.delete("host");
+
+  const body = (req.method !== "GET" && req.method !== "HEAD")
+    ? await req.text()
+    : undefined;
+
+  const discordRes = await fetch(discordUrl, {
+    method: req.method,
+    headers,
     body,
   });
+
   const data = await discordRes.text();
   return new Response(data, {
     status: discordRes.status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": discordRes.headers.get("content-type") || "application/json" },
   });
 });
